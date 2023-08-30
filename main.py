@@ -23,7 +23,7 @@ MEMBER_ROLE_ID = 1145840712466825296  # Replace with the actual Member role ID
 
 # Custom Role Names
 ROLE_NAMES = {
-    "Král": MODERATOR_ROLE_ID,
+    "Král v zámku": MODERATOR_ROLE_ID,
     "Cigoš": MEMBER_ROLE_ID
 }
 # User data dictionary to store levels
@@ -62,7 +62,7 @@ async def profile(ctx, member: discord.Member = None):
 
 # Role Commands
 @bot.command()
-async def addrole(ctx, role_name):
+async def addrole(ctx, *, role_name):
     role_id = ROLE_NAMES.get(role_name)
     if role_id:
         role = ctx.guild.get_role(role_id)
@@ -76,7 +76,7 @@ async def addrole(ctx, role_name):
         await ctx.send("Role not found.")
 
 @bot.command()
-async def removerole(ctx, role_name):
+async def removerole(ctx, *, role_name):
     role_id = ROLE_NAMES.get(role_name)
     if role_id:
         role = ctx.guild.get_role(role_id)
