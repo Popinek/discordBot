@@ -47,14 +47,18 @@ async def on_message(msg):
         cursor.execute("SELECT level, exp FROM users WHERE user_id = ?", (user_id,))
         level, exp = cursor.fetchone()
 
-        exp_needed = level * 10  # Example: Level * 10 for required exp
-        if exp >= exp_needed:
+        exp_needed = level * 10  # Calculate required exp based on the current level
+
+        while exp >= exp_needed:
             cursor.execute("UPDATE users SET level = level + 1, exp = 0 WHERE user_id = ?", (user_id,))
             conn.commit()
             await msg.channel.send(
                 f"Congrats {msg.author.mention}! You've leveled up to level {level + 1}!")
+            level += 1  # Update the local 'level' variable
+            exp_needed = level * 10
 
         await bot.process_commands(msg)
+
 
 
 
@@ -102,6 +106,70 @@ async def removerole(ctx, *, role_name):
             await ctx.send("Role not found or you don't have the role.")
     else:
         await ctx.send("Role not found.")
+
+
+# Add points
+@bot.command()
+@commands.has_role("Král v zámku")  # Check if the author has the "Král v zámku" role
+async def addpoints(ctx, member: discord.Member, points: int):
+    if points <= 0:
+        await ctx.send("Points must be a positive number.")
+        return
+
+    user_id = str(member.id)
+    cursor.execute("INSERT OR IGNORE INTO users (user_id, level, exp) VALUES (?, ?, ?)", (user_id, 1, 0))
+    cursor.execute("SELECT level, exp FROM users WHERE user_id = ?", (user_id,))
+    level, exp = cursor.fetchone()
+
+    new_exp = exp + points
+    if new_exp >= level * 10:
+        # Level up and reset exp if exp is greater than or equal to 10 times the level
+        cursor.execute("UPDATE users SET level = level + 1, exp = ? WHERE user_id = ?", (new_exp - level * 10, user_id))
+        conn.commit()
+        await ctx.send(f"Congrats {member.mention}! You've leveled up to level {level + 1}!")
+    else:
+        cursor.execute("UPDATE users SET exp = ? WHERE user_id = ?", (new_exp, user_id))
+        conn.commit()
+
+    # Retrieve the updated exp value from the database
+    cursor.execute("SELECT exp FROM users WHERE user_id = ?", (user_id,))
+    updated_exp = cursor.fetchone()[0]
+
+    await ctx.send(f"Added {points} points to {member.mention}. New exp: {updated_exp}")
+
+
+@bot.command()
+@commands.has_role("Král v zámku")  # Check if the author has the "Král v zámku" role
+async def removepoints(ctx, member: discord.Member, points: int):
+    if points <= 0:
+        await ctx.send("Points must be a positive number.")
+        return
+
+    user_id = str(member.id)
+    cursor.execute("INSERT OR IGNORE INTO users (user_id, level, exp) VALUES (?, ?, ?)", (user_id, 1, 0))
+    cursor.execute("SELECT level, exp FROM users WHERE user_id = ?", (user_id,))
+    level, exp = cursor.fetchone()
+
+    new_exp = max(exp - points, 0)  # Ensure exp does not go negative
+
+    if exp < points:
+        # Level down and reset exp if current exp is less than points
+        remaining_points = points - exp
+        new_level = max(level - 1, 1)
+        new_exp = new_level * 10 - remaining_points
+
+        cursor.execute("UPDATE users SET level = ?, exp = ? WHERE user_id = ?", (new_level, new_exp, user_id))
+        conn.commit()
+
+        await ctx.send(f"{member.mention} has leveled down to level {new_level}!")
+
+    else:
+        cursor.execute("UPDATE users SET exp = ? WHERE user_id = ?", (new_exp, user_id))
+        conn.commit()
+
+    await ctx.send(f"Removed {points} points from {member.mention}. New exp: {new_exp}")
+
+
 
 
 # Server Statistics
