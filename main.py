@@ -1,6 +1,7 @@
 import os
 import discord
 import sqlite3
+import requests
 from dotenv import load_dotenv
 from discord.ext import commands
 
@@ -8,6 +9,7 @@ from discord.ext import commands
 load_dotenv()
 
 token = os.getenv("TOKEN")
+weather_api_key = os.getenv("WEATHER_API_KEY")  # Replace with your OpenWeatherMap API key
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -80,32 +82,35 @@ async def profile(ctx, member: discord.Member = None):
 
 # Role Commands
 @bot.command()
-async def addrole(ctx, *, role_name):
+@commands.has_role("Král v zámku")  # Check if the author has the "Král v zámku" role
+async def addrole(ctx, member: discord.Member, *, role_name):
+    # Check if the specified role exists
     role_id = ROLE_NAMES.get(role_name)
     if role_id:
         role = ctx.guild.get_role(role_id)
         if role:
-            await ctx.author.add_roles(role)
-            await ctx.send(f"You've been assigned the {role.name} role.")
+            await member.add_roles(role)
+            await ctx.send(f"{member.mention} has been assigned the {role.name} role.")
         else:
             await ctx.send("Role not found.")
-
     else:
         await ctx.send("Role not found.")
 
-
 @bot.command()
-async def removerole(ctx, *, role_name):
+@commands.has_role("Král v zámku")  # Check if the author has the "Král v zámku" role
+async def removerole(ctx, member: discord.Member, *, role_name):
+    # Check if the specified role exists
     role_id = ROLE_NAMES.get(role_name)
     if role_id:
         role = ctx.guild.get_role(role_id)
-        if role and role in ctx.author.roles:
-            await ctx.author.remove_roles(role)
-            await ctx.send(f"You've been removed from the {role.name} role.")
+        if role and role in member.roles:
+            await member.remove_roles(role)
+            await ctx.send(f"{member.mention} has been removed from the {role.name} role.")
         else:
-            await ctx.send("Role not found or you don't have the role.")
+            await ctx.send("Role not found or the user doesn't have the role.")
     else:
         await ctx.send("Role not found.")
+
 
 
 # Add points
@@ -215,6 +220,42 @@ async def on_member_join(member):
 async def rules(ctx):
     rules_text = "Server Rules:\n1. Be respectful to others.\n2. No spamming.\n3. No NSFW content."
     await ctx.send(rules_text)
+
+
+# Weather
+@bot.command()
+async def weather(ctx, *, city_name):
+    # Check if the city_name argument is provided
+    if not city_name:
+        await ctx.send("Please provide a city name.")
+        return
+
+    try:
+        # Make a request to the OpenWeatherMap API
+        response = requests.get(
+            f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={weather_api_key}&units=metric"
+        )
+
+        # Check for a successful response
+        if response.status_code == 200:
+            data = response.json()
+            # Extract weather information
+            weather_description = data["weather"][0]["description"]
+            temperature = data["main"]["temp"]
+            humidity = data["main"]["humidity"]
+
+            # Send the weather information as a message
+            await ctx.send(
+                f"Weather in {city_name}:\nDescription: {weather_description}\nTemperature: {temperature}°C\nHumidity: {humidity}%"
+            )
+        elif response.status_code == 404:
+            await ctx.send("City not found. Please check the city name and try again.")
+        else:
+            await ctx.send("Unable to fetch weather data. Please try again later.")
+
+    except Exception as e:
+        print(e)
+        await ctx.send("An error occurred while fetching weather data. Please try again later.")
 
 
 @bot.command()
