@@ -241,12 +241,15 @@ async def weather(ctx, *, city_name):
             data = response.json()
             # Extract weather information
             weather_description = data["weather"][0]["description"]
+
             temperature = data["main"]["temp"]
             humidity = data["main"]["humidity"]
+            wind_speed = data["wind"]["speed"]  # Wind speed in meters per second
+            cloudiness = data["clouds"]["all"]  # Cloudiness percentage
 
             # Send the weather information as a message
             await ctx.send(
-                f"Weather in {city_name}:\nDescription: {weather_description}\nTemperature: {temperature}°C\nHumidity: {humidity}%"
+                f"Weather in {city_name}:\nDescription: {weather_description}\nTemperature: {temperature}°C\nHumidity: {humidity}%\nWind Speed: {wind_speed} m/s\nCloudiness: {cloudiness}%"
             )
         elif response.status_code == 404:
             await ctx.send("City not found. Please check the city name and try again.")
