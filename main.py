@@ -216,10 +216,31 @@ async def on_member_join(member):
         await channel.send(f"Hi {member.mention}, welcome to the server!")
 
 
+# not tested
+@bot.event
+async def on_member_leave(member):
+    channel_id = 1144617055765663887  # Replace with the ID of the channel where you want to send goodbye messages
+    channel = member.guild.get_channel(channel_id)
+
+    if channel is not None:
+        await channel.send(f"Goodbye, {member.mention}! We'll miss you.")
+
+
 @bot.command()
 async def rules(ctx):
     rules_text = "Server Rules:\n1. Be respectful to others.\n2. No spamming.\n3. No NSFW content."
     await ctx.send(rules_text)
+
+
+# not tested
+@bot.command()
+@commands.has_role("Král v zámku")  # Check if the author has the "Král v zámku" role
+async def ban(ctx, user: discord.Member):
+    if user:
+        await user.ban()
+        await ctx.send(f"{user.mention} has been banned.")
+    else:
+        await ctx.send("User not found or no user mentioned.")
 
 
 # Weather
@@ -270,6 +291,21 @@ async def help_command(ctx):
         "?rules - Display the server rules."
     )
     await ctx.send(help_text)
+
+
+@bot.command()
+async def meme(ctx):
+    try:
+        response = requests.get("https://meme-api.com/gimme/dankmemes")  # Replace with the actual meme API endpoint
+        if response.status_code == 200:
+            data = response.json()
+            meme_url = data["url"]
+            await ctx.send(f"Here's a random meme for you:\n{meme_url}")
+        else:
+            await ctx.send("Couldn't fetch a meme. Please try again later.")
+    except Exception as e:
+        print(e)
+        await ctx.send("An error occurred while fetching the meme.")
 
 
 # Close the Database
