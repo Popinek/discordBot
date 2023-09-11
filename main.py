@@ -3,13 +3,15 @@ import discord
 import sqlite3
 import requests
 from dotenv import load_dotenv
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 
 load_dotenv()
 
 token = os.getenv("TOKEN")
-weather_api_key = os.getenv("WEATHER_API_KEY")  # Replace with your OpenWeatherMap API key
+weather_api_key = os.getenv("WEATHER_API_KEY")
+TWITCH_CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
+TWITCH_OAUTH_TOKEN = os.getenv("TWITCH_OAUTH_TOKEN")
 
 intents = discord.Intents.default()
 intents.message_content = True
