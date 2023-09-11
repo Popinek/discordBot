@@ -4,20 +4,30 @@ import sqlite3
 import requests
 from dotenv import load_dotenv
 from discord.ext import commands, tasks
+from twitchAPI.twitch import Twitch
+
 
 
 load_dotenv()
 
 token = os.getenv("TOKEN")
+
 weather_api_key = os.getenv("WEATHER_API_KEY")
+
 TWITCH_CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
-TWITCH_OAUTH_TOKEN = os.getenv("TWITCH_OAUTH_TOKEN")
+TWITCH_CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
+TWITCH_ACCESS_TOKEN = os.getenv("TWITCH_ACCESS_TOKEN")
+TWITCH_USERNAME = 'popiii'
+
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
+
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.voice_states = True
 bot = commands.Bot(command_prefix='?', intents=intents)
+
 
 block_words = ["xxx"]
 
@@ -38,6 +48,34 @@ ROLE_NAMES = {
 }
 # User data dictionary to store levels
 user_data = {}
+
+
+# Function to send a message to Discord
+def send_discord_message(message):
+    data = {
+        'content': message
+    }
+    response = requests.post(DISCORD_WEBHOOK_URL, json=data)
+    if response.status_code == 204:
+        print("Message sent to Discord")
+    else:
+        print(f"Failed to send message to Discord. Status code: {response.status_code}")
+
+
+# Function to get the current followers
+def get_current_followers():
+    url = f'https://api.twitch.tv/helix/users/follows?to_id={TWITCH_USERNAME}'
+    headers = {
+        'Client-ID': TWITCH_CLIENT_ID
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()['total']
+    else:
+        return None
+
+
+
 
 
 @bot.event
@@ -196,6 +234,16 @@ async def serverstats(ctx):
 @bot.event
 async def on_ready():
     print(f"Bot Logged in as {bot.user}")
+
+    # Initialize the follower count
+    current_followers = get_current_followers()
+
+    while True:
+        new_followers = get_current_followers()
+        if new_followers is not None and new_followers > current_followers:
+            message = f"New follower on Twitch: {TWITCH_USERNAME} now has {new_followers} followers!"
+            send_discord_message(message)
+            current_followers = new_followers
 
 
 @bot.event
